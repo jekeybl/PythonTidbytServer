@@ -2,51 +2,52 @@
 
 ---
 
-To test my apps and see what they look like directly on the Tidbyt, I wanted to create a way to emulate the community Tidbyt server so that I could continuously cycle through one or more of my apps and create updated renderings and push the WebP's to my Tidbyt.
+### Introduction
+The ***tidbyt_server.py*** script serves as a Python-based server emulation for managing and displaying WebP images on Tidbyt devices based on certain conditions. It allows users to specify device names (helpful if you own multiple devices) and control the logging level through command-line arguments. The script is structured to continuously manage and display different apps based on time conditions and app settings.
 
-The use cases for the emulation are to:
-+ Handle the management of any Tidbyt digital display device
-+ Push .webp files generated from .star files to the Tidbyt
-+ Have the ability to display WebP's for specific durations
-+ Have the ability to not display selected WebP's because it is night
-+ Have the ability to queue the order that the Tidbyt apps are displayed on the screen
-+ Have the ability to continuously cycle through the selected apps
-+ Already have the next WebP ready to be pushed to Tidbyt as the current WebP finishes displaying
+##### Use Cases for the Emulation
 
-**SOLUTION**
++ Handle the  management for a Tidbyt digital display device
++ Use .webp files generated from .star files to render animations
++ Ability to display WebP's for specific durations
++ Ability to turn off rendering certain WebP's based on nighttime when the display should be off or show darker versions
++ Ability to queue the order of the Tidbyt apps
++ Ability to continuously cycle through the selected apps
++ Already have the next WebP ready to be sent to Tidbyt when the current WebP finishes displaying
 
-The Python file named `tidbyt_server.py` simulates the behavior of a Tidbyt server using Pixlet to render *Star* files and then display the *WebP* files for defined durations.  The script controls when specific apps are shown on the Tidbyt device based on the time of day, with specific attention given to whether or not the app should be displayed during nighttime hours.
+### Purpose and Functionality
++ **Main Goal**: The script allows users to control the display of WebP images on a Tidbyt device based on time settings (daytime vs nighttime) and pre-set schedules. It also offers a facility to customize display content and duration for each app.
++ **Configuration**: It utilizes command-line arguments to configure the device name, day start/end times, and logging level, making it flexible for different environments and use cases.
 
-***NOTE:*** The Tidbyt server file uses my developed apps (which are available on community/apps) in the `Tidbyt` list as examples of how to use the script.
+#### Code Structure and Modules
++ **Modules Used**: The script imports standard Python modules such as argparse, datetime, logging, re, subprocess, and time which collectively support command-line parsing, date and time manipulation, regular expressions, external process management, and time-related functions.
++ **Class Definition**: A class App is defined to encapsulate the properties of each application or display item, including its name, display mode (day/night), duration, repetition frequency, related file names, and additional arguments.
+#### Functions and Their Operations
++ **Initialization**: initialize_apps() sets up initial display items (apps) and their order of display.
++ **Device Handling**: get_device() identifies the connected Tidbyt device by name using the pixlet command-line tool.
++ **Time Management**: day_time_range() computes the start and end times of the day based on input arguments, essential for determining whether it's daytime or nighttime.
++ **Argument Parsing**: parse_arguments() sets up and parses command-line options, also configuring the logging level.
++ **Rendering and Display**: display_app() manages the rendering and pushing of WebP files to the device.
++ **Queue Processing** : process_app_queue() manages the sequence of app displays, taking into account whether it's appropriate to display them (daytime or app-specific settings).
+#### Execution Flow
++ **Main Loop**: The main_loop() continuously checks the time of day and processes the queue of apps accordingly.
++ **Main Function**: Establishes the script's entry point, initializing necessary settings and starting the main loop.
+#### Robustness and Error Handling
++ The script includes basic error handling for subprocesses to manage possible failures in external commands. It logs errors appropriately, helping in troubleshooting.
 
-Here is the general overview of the script:
+The .star files do not have to be located in the same folder as the Python script (tidbyt_server.py).
 
-1. **Imports:** The script imports several standard libraries: `subprocess`, `datetime`, `time`, and `re`.
-
-2. **Function Definitions:**
-   * `get_device()`: This function uses the `subprocess` module to run the command "pixlet devices" in the shell and capture its output, and returns the first line. 
-   * `get_rendertime(file_name)`: This function takes a `.star` file as input, uses the `subprocess` module to run a pixlet profiling command with the file_name, and then uses regular expressions to extract the time it took to render the file.
-
-3. **Variables Definitions:** There are several variables defined in the script:
-   * `Tidbyt` list: Is a dictionary of elements for different Tidbyt apps having attributes like 'NAME', 'MODE', 'DURATION', 'REPETITION', 'STAR_FILE', 'ARGS', 'WEBP_FILE'.
-   		* `NAME`: Name of the app (currently only informational)
-		* `MODE`: Boolean indicating whether the app should be displayed at night (True means it will display, False means it will be skipped)
-		* `DURATION`: How long (in seconds) the WebP will display.  The value should equal the duration that the app's animation is displayed or how long you want to display a non-changing image.  The maximum value should be around 15 seconds.  Some trial and error may need to be performed.
-		* `REPETITION`: How many times the app's for loop should be repeated (Useful for clock apps)
-		* `STAR_FILE`: Path to the `.star` file for rendering the display
-		* `WEBP_FILE`: Path to the `.webp` file for uploading to the device
-		* `ARGS`: Any additional arguments that are passed via the schema
-   * `Queue` list: Here, we define the sequence to display the applications. The contents are the indices of apps in the `Tidbyt` list.
-   * Several other variables to control the app's behavior (like `debug` for debugging, and `H_DAY`, `M_DAY`, `H_NIGHT`, `M_NIGHT` to control hours of operation).
-   
-4. **Main Logic**: The script enters an infinite loop where it constantly checks the current time and determines whether it's in day or night mode based on predefined variables. Then, it iteratively goes through each app in the queue and:
-   * Checks if each app should be displayed or not based on its mode and whether it's day or night.
-   * For each app to be displayed, the script attempts to run `pixlet render` and `pixlet push` commands via `subprocess.check_output(input, shell=True)`.
-   * If an exception occurs while running these commands, the script will print an error message.  
-   * The process goes to sleep for 'DURATION' (seconds) minus the time (seconds) that the next app in the queue needs to render the next WebP file so it is available once the current WebP file finishes displaying.
-
-The .star files do not have to be located in the same folder as the Python script (tidbyt_server.py) by using the full path for the file names.  To run the script use the terminal to run the command:
-
-*python3 tidbyt_server.py*
+#### Usage
+> ***python3** **tidbyt_server.py** [-h] --device DEVICE [--day-start DAY_START] [--day-end DAY_END] [--log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}]*
+>
+>Tidbyt server script
+>
+>options:
+>  -h, --help            show help message and exit
+>  --device DEVICE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name of the Tidbyt device
+>  --day-start DAY_START &nbsp;Day start time in HH:MM format - default 07:00
+>  --day-end DAY_END &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day end time in HH:MM format - default 23:00
+>  --log-level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Set the logging level - default WARNING
 
 
